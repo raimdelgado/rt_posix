@@ -144,7 +144,11 @@ TEST(testRTPOSIX, set_cpu_affinity)
     POSIX_TASK stRTTask;
     INT nRet = set_cpu_affinity(NULL, 0);
     EXPECT_EQ(-EPERM, nRet);
-    
+
+    // Create Task Successfully
+    nRet = create_rt_task(&stRTTask, (const PCHAR)"ABCD", 0, 99);
+    EXPECT_EQ(RET_SUCC, nRet);
+
     nRet = set_cpu_affinity(&stRTTask, 99);
     EXPECT_EQ(-EINVAL, nRet);
     
@@ -205,8 +209,14 @@ TEST(testRTPOSIX, resume_task)
 
 TEST(testRTPOSIX, get_self)
 {
+    POSIX_TASK stRTTask;
+
+    // Create Task Successfully
+    INT nRet = create_rt_task(&stRTTask, (const PCHAR)"ABCD", 0, 99);
+    EXPECT_EQ(RET_SUCC, nRet);
+
     POSIX_TASK* pTask = get_self();
-    EXPECT_TRUE(pTask==NULL);
+    EXPECT_TRUE(pTask==&stRTTask);
 }
 
 TEST(testRTPOSIX, spin_timer)
