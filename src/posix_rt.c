@@ -125,7 +125,7 @@ default_trampoline_proc(PVOID arg)
 		DBG_ERROR("FAILED : START PROC : pTask is NULL or pTask is not Started!");
 		exit(-1);
 	}
-	else if (pTask != NULL && (pTask->dwStatus == eSuspended || pTask->bStartSuspended == TRUE))
+	else if ((pTask->dwStatus == eSuspended) || (pTask->bStartSuspended == TRUE))
 	{
 		DBG_TRACE("START PROC : %s Task Start Suspended! Waiting for resume_task()", pTask->strName);
 		pthread_mutex_lock(&pTask->mtxSuspend);
@@ -281,7 +281,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		return -nRet;
 	}
 	
-	pthread_mutexattr_t *pstMtxAttr = NULL;
+	pthread_mutexattr_t *pstMtxAttr = malloc(sizeof(pthread_mutexattr_t));
 	// we need to ensure that the mutex implements priority inheritance in case of real-time task
 	if (bIsRealTime == TRUE)
 	{
@@ -300,6 +300,8 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		}
 		pstMtxAttr = &stMtxAttr;
 	}
+	else pstMtxAttr = NULL;
+		
 	nRet = pthread_mutex_init(&apTask->mtxSuspend, pstMtxAttr);
 	if (nRet != RET_SUCC)
 	{
