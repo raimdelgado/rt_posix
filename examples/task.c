@@ -26,7 +26,7 @@ void sample_proc(void* arg)
 void signal_handler(int nSignal)
 {
     init_lowlevel_logger(TRUE);
-    AIDE_INFO("RT-POSIX has been signalled [%d]", nSignal);
+    DBG_INFO("RT-POSIX has been signalled [%d]", nSignal);
     exit(0);
 }
 

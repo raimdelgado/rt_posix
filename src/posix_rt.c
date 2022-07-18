@@ -25,7 +25,7 @@ VOID _destructor_fcn(void) __attribute__((destructor));
 void handle_signals(int nSigNum)
 {
 	init_lowlevel_logger(TRUE);
-	AIDE_INFO("TASK has been signalled [%d]", nSigNum);
+	DBG_INFO("TASK has been signalled [%d]", nSigNum);
 }
 /*****************************************************************************/
 VOID 
@@ -34,13 +34,13 @@ _constructor_fcn(void) // initiates the task management pthread_key
 	init_lowlevel_logger(TRUE);
 	if (pthread_key_create(&g_unTaskKey, NULL))
 	{
-		AIDE_ERROR("CONSTRUCTOR: FAILED : Creating Task Key");
+		DBG_ERROR("CONSTRUCTOR: FAILED : Creating Task Key");
 		exit(1);
 	}
 	else
 	{
 		// print version when loaded
-		AIDE_INFO("LOADING RT-POSIX v%d.%d.%d.%d [%s]", (INT)VER_MAJOR, (INT)VER_MINOR, (INT)VER_SUB, (INT)VER_PATCH, VER_NAME);
+		DBG_INFO("LOADING RT-POSIX v%d.%d.%d.%d [%s]", (INT)VER_MAJOR, (INT)VER_MINOR, (INT)VER_SUB, (INT)VER_PATCH, VER_NAME);
 	}
 
 	signal(SIGTERM, handle_signals);
@@ -57,12 +57,12 @@ _destructor_fcn(void) // deletes the task management pthread_key
 	init_lowlevel_logger(TRUE); 
 	if (pthread_key_delete(g_unTaskKey))
 	{
-		AIDE_ERROR("DESTRUCTOR: FAILED : Deleting Task Key");
+		DBG_ERROR("DESTRUCTOR: FAILED : Deleting Task Key");
 		exit(1);
 	}
 	else
 	{
-		AIDE_INFO("RT-POSIX HAS BEEN UNLOADED");
+		DBG_INFO("RT-POSIX HAS BEEN UNLOADED");
 	}
 }
 /*****************************************************************************/
@@ -87,7 +87,7 @@ _get_posix_task_or_self(POSIX_TASK* apTask)
 	POSIX_TASK* pTask;
 	pTask = _get_current_task();
 	if (pTask == NULL)
-		AIDE_ERROR("FAILED : Get Current Running Task");
+		DBG_ERROR("FAILED : Get Current Running Task");
 
 	return pTask;
 }
@@ -122,18 +122,18 @@ default_trampoline_proc(PVOID arg)
 	
 	if (pTask == NULL || (pTask->dwStatus != ePendingStart && pTask->dwStatus != eSuspended))
 	{
-		AIDE_ERROR("FAILED : START PROC : pTask is NULL or pTask is not Started!");
+		DBG_ERROR("FAILED : START PROC : pTask is NULL or pTask is not Started!");
 		exit(-1);
 	}
 	else if (pTask != NULL && (pTask->dwStatus == eSuspended || pTask->bStartSuspended == TRUE))
 	{
-		AIDE_TRACE("START PROC : %s Task Start Suspended! Waiting for resume_task()", pTask->strName);
+		DBG_TRACE("START PROC : %s Task Start Suspended! Waiting for resume_task()", pTask->strName);
 		pthread_mutex_lock(&pTask->mtxSuspend);
 		pTask->dwStatus = (DWORD)eSuspended;
 		int nRet = pthread_cond_wait(&pTask->cvSuspend, &pTask->mtxSuspend);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : START PROC (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : START PROC (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
 			exit(-1);
 		}
 		pthread_mutex_unlock(&pTask->mtxSuspend);
@@ -141,18 +141,18 @@ default_trampoline_proc(PVOID arg)
 	}
 	
 	if((pthread_setname_np(pTask->stThread, pTask->strName)))
-		AIDE_WARN("WARNING : START PROC (pthread_setname_np): %s", pTask->strName);
+		DBG_WARN("WARNING : START PROC (pthread_setname_np): %s", pTask->strName);
 
 	pTask->nPid = gettid();
 	_set_current_task(pTask);
-	AIDE_TRACE("START PROC : %s Task Started! (PID: %d)", pTask->strName, pTask->nPid);
+	DBG_TRACE("START PROC : %s Task Started! (PID: %d)", pTask->strName, pTask->nPid);
 	pTask->dwStatus = (DWORD)eRunning;
 	
 	// run the function pointer (entry of the task)
 	pTask->pTaskFcn(pTask->pTaskArg);
 	
 	pTask->dwStatus = (DWORD)eDead;
-	AIDE_TRACE("START PROC : %s Task Ended!", pTask->strName);
+	DBG_TRACE("START PROC : %s Task Ended!", pTask->strName);
 	return NULL;
 }
 /*****************************************************************************/
@@ -191,7 +191,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 
 	if (strlen(astrName) > MAX_NAME_LENGTH)
 	{
-		AIDE_ERROR("FAILED : Create TASK (Length of astrName should be less than %d)", (INT)MAX_NAME_LENGTH);
+		DBG_ERROR("FAILED : Create TASK (Length of astrName should be less than %d)", (INT)MAX_NAME_LENGTH);
 		return -EINVAL;
 	}
 	
@@ -205,7 +205,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 	nRet = pthread_attr_init(&apTask->stThreadAttr);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Create TASK (pthread_attr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Create TASK (pthread_attr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 		return -nRet;
 	}
 
@@ -213,7 +213,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 	nRet = pthread_attr_setdetachstate(&apTask->stThreadAttr, PTHREAD_CREATE_DETACHED);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Create TASK (pthread_attr_setdetachstate): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Create TASK (pthread_attr_setdetachstate): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 		return -nRet;
 	}
 
@@ -224,7 +224,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		nRet = pthread_attr_setinheritsched(&apTask->stThreadAttr, PTHREAD_EXPLICIT_SCHED);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Create TASK (pthread_attr_setinheritsched): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Create TASK (pthread_attr_setinheritsched): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 			return -nRet;
 		}
 		// default scheduler is SCHED_OTHER which is a time-sharing scheduler.
@@ -232,7 +232,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		nRet = pthread_attr_setschedpolicy(&apTask->stThreadAttr, SCHED_FIFO);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Create TASK (pthread_attr_setschedpolicy): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Create TASK (pthread_attr_setschedpolicy): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 			return -nRet;
 		}
 		// implement priority limits
@@ -240,7 +240,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 			apTask->nPriority = anPriority;
 		else
 		{
-			AIDE_ERROR("FAILED : Create TASK (anPriority should be within the range of %d ~ %d)", (INT)LIM_PRIORITY_LO, (INT)LIM_PRIORITY_HI);
+			DBG_ERROR("FAILED : Create TASK (anPriority should be within the range of %d ~ %d)", (INT)LIM_PRIORITY_LO, (INT)LIM_PRIORITY_HI);
 			return -EINVAL;
 		}
 		// set priority of the thread
@@ -248,7 +248,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		nRet = pthread_attr_setschedparam(&apTask->stThreadAttr, &stParam);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Create TASK (pthread_attr_setschedparam): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Create TASK (pthread_attr_setschedparam): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 			return -nRet;
 		}
 	}
@@ -267,7 +267,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 	nRet = pthread_attr_setstacksize(&apTask->stThreadAttr, apTask->ullStackSize);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Create TASK (pthread_attr_setstacksize): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Create TASK (pthread_attr_setstacksize): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 		return -nRet;
 	}
 	
@@ -277,7 +277,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 	nRet = pthread_cond_init(&apTask->cvSuspend, NULL);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Create TASK (pthread_cond_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Create TASK (pthread_cond_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 		return -nRet;
 	}
 	
@@ -289,13 +289,13 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		nRet = pthread_mutexattr_init(&stMtxAttr);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 			return -nRet;
 		}
 		nRet = pthread_mutexattr_setprotocol(&stMtxAttr, PTHREAD_PRIO_INHERIT);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 			return -nRet;
 		}
 		pstMtxAttr = &stMtxAttr;
@@ -303,7 +303,7 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 	nRet = pthread_mutex_init(&apTask->mtxSuspend, pstMtxAttr);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Create TASK (pthread_mutexattr_init): %s with errno (%d:%s)", astrName, nRet, strerror(nRet));
 		return -nRet;
 	}
 
@@ -315,9 +315,9 @@ create_rt_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPr
 {
 	INT nRet = _create_task(apTask, astrName, anStkSize, anPriority, TRUE);
 	if (nRet == RET_SUCC)
-		AIDE_TRACE("SUCCESS: Create RT TASK : name=%s, priority=%d", apTask->strName, apTask->nPriority);
+		DBG_TRACE("SUCCESS: Create RT TASK : name=%s, priority=%d", apTask->strName, apTask->nPriority);
 	else
-		AIDE_ERROR("FAILED : Create RT TASK: %s with errno (%d:%s)",astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Create RT TASK: %s with errno (%d:%s)",astrName, nRet, strerror(-nRet));
 
 	return nRet;
 }
@@ -328,17 +328,17 @@ spawn_rt_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPri
 	INT nRet = create_rt_task(apTask, astrName, anStkSize, anPriority);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Spawn RT TASK: could not CREATE %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Spawn RT TASK: could not CREATE %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
 		return nRet;
 	}
 	nRet = start_task(apTask, apEntry, apArg);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Spawn RT TASK: could not START %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Spawn RT TASK: could not START %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
 		return nRet;
 	}
 
-	AIDE_TRACE("SUCCESS: Spawn RT TASK : name=%s, priority=%d", apTask->strName, apTask->nPriority);
+	DBG_TRACE("SUCCESS: Spawn RT TASK : name=%s, priority=%d", apTask->strName, apTask->nPriority);
 	return RET_SUCC;
 }
 /*****************************************************************************/
@@ -347,9 +347,9 @@ create_nrt_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize)
 {
 	INT nRet = _create_task(apTask, astrName, anStkSize, 0, FALSE);
 	if (nRet == RET_SUCC)
-		AIDE_TRACE("SUCCESS: Create NRT TASK: name=%s", apTask->strName);
+		DBG_TRACE("SUCCESS: Create NRT TASK: name=%s", apTask->strName);
 	else
-		AIDE_ERROR("FAILED : Create NRT TASK: %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Create NRT TASK: %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
 
 	return nRet;
 }
@@ -360,17 +360,17 @@ spawn_nrt_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, PTASKFCN
 	INT nRet = create_nrt_task(apTask, astrName, anStkSize);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Spawn NRT TASK: could not CREATE %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Spawn NRT TASK: could not CREATE %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
 		return nRet;
 	}
 	nRet = start_task(apTask, apEntry, apArg);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Spawn NRT TASK: could not START %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
+		DBG_ERROR("FAILED : Spawn NRT TASK: could not START %s with errno (%d:%s)", astrName, nRet, strerror(-nRet));
 		return nRet;
 	}
 	
-	AIDE_TRACE("SUCCESS: Spawn NRT TASK : name=%s", apTask->strName);
+	DBG_TRACE("SUCCESS: Spawn NRT TASK : name=%s", apTask->strName);
 	return RET_SUCC;
 }
 /*****************************************************************************/
@@ -381,7 +381,7 @@ start_task(POSIX_TASK* apTask, PTASKFCN apEntry, PVOID apArg)
 
 	if (apTask == NULL || apTask->dwStatus > eReady)
 	{
-		AIDE_ERROR("FAILED : START TASK: apTask is either NULL or has already started!");
+		DBG_ERROR("FAILED : START TASK: apTask is either NULL or has already started!");
 		return -EWOULDBLOCK;
 	}
 	DWORD dwPreviousStatus = apTask->dwStatus;
@@ -392,7 +392,7 @@ start_task(POSIX_TASK* apTask, PTASKFCN apEntry, PVOID apArg)
 	nRet = pthread_create(&apTask->stThread, &apTask->stThreadAttr, default_trampoline_proc, apTask);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : START TASK (pthread_create): %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : START TASK (pthread_create): %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
 		apTask->dwStatus = dwPreviousStatus;
 		return -nRet;
 	}
@@ -401,7 +401,7 @@ start_task(POSIX_TASK* apTask, PTASKFCN apEntry, PVOID apArg)
 	nRet = pthread_attr_destroy(&apTask->stThreadAttr);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_WARN("WARNING : START TASK (pthread_attr_destroy): %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
+		DBG_WARN("WARNING : START TASK (pthread_attr_destroy): %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
 	}
 
 	return RET_SUCC;
@@ -416,7 +416,7 @@ delete_task(POSIX_TASK* apTask)
 	pTask = _get_posix_task_or_self(apTask);
 	if (pTask == NULL)
 	{
-		AIDE_ERROR("FAILED : Delete Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
+		DBG_ERROR("FAILED : Delete Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
 		return -EPERM;
 	}
 	// return immediately if task is either dead or suspended
@@ -449,7 +449,7 @@ suspend_task(POSIX_TASK* apTask)
 	pTask = _get_posix_task_or_self(apTask);
 	if (pTask == NULL)
 	{
-		AIDE_ERROR("FAILED : Suspend Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
+		DBG_ERROR("FAILED : Suspend Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
 		return -EPERM;
 	}
 	// return immediately if task is either dead or suspended
@@ -470,7 +470,7 @@ suspend_task(POSIX_TASK* apTask)
 		nRet = pthread_cond_wait(&pTask->cvSuspend, &pTask->mtxSuspend);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Suspend Task (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Suspend Task (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
 			exit(-1);
 		}
 		pthread_mutex_unlock(&pTask->mtxSuspend);
@@ -485,7 +485,7 @@ resume_task(POSIX_TASK* apTask)
 	pTask = _get_posix_task_or_self(apTask);
 	if (pTask == NULL)
 	{
-		AIDE_ERROR("FAILED : Resume Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
+		DBG_ERROR("FAILED : Resume Posix TASK: with errno (%d:%s)", EPERM, strerror(EPERM));
 		return -EPERM;
 	}
 	if (pTask->dwStatus == eSuspended)
@@ -493,7 +493,7 @@ resume_task(POSIX_TASK* apTask)
 		int nRet = pthread_cond_signal(&pTask->cvSuspend);
 		if (nRet != RET_SUCC)
 		{
-			AIDE_ERROR("FAILED : Resume Task (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
+			DBG_ERROR("FAILED : Resume Task (pthread_cond_wait): %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
 			exit(-1);
 		}
 	}
@@ -530,7 +530,7 @@ set_cpu_affinity(POSIX_TASK* apTask, INT anCpuNum)
 	// disallow changing the affinity when the task is already scheduled
 	if (apTask->dwStatus > eReady)
 	{
-		AIDE_ERROR("FAILED : Set CPU Affinity: This should be called before starting the RT Task!");
+		DBG_ERROR("FAILED : Set CPU Affinity: This should be called before starting the RT Task!");
 		return -EPERM;
 	}
 	
@@ -538,7 +538,7 @@ set_cpu_affinity(POSIX_TASK* apTask, INT anCpuNum)
 	// ensure that the anCpuNum is within the range of available CPUs
 	if (anCpuNum > (get_available_cpus()-1))
 	{
-		AIDE_ERROR("FAILED : Set CPU Affinity: anCpuNum is greater than the available CPUS!");
+		DBG_ERROR("FAILED : Set CPU Affinity: anCpuNum is greater than the available CPUS!");
 		return -EINVAL;
 	}
 	else if (anCpuNum < 0)  nCpuNum = 0;
@@ -550,11 +550,11 @@ set_cpu_affinity(POSIX_TASK* apTask, INT anCpuNum)
 	int nRet = pthread_attr_setaffinity_np(&apTask->stThreadAttr, sizeof(CPUSET), &apTask->stCpuAffinity);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_ERROR("FAILED : Set CPU Affinity: %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
+		DBG_ERROR("FAILED : Set CPU Affinity: %s with errno (%d:%s)", apTask->strName, nRet, strerror(nRet));
 		return -nRet;
 	}
 
-	AIDE_TRACE("SUCCESS: Set CPU Affinity: taskname=%s, cpu#=%d",apTask->strName, nCpuNum);
+	DBG_TRACE("SUCCESS: Set CPU Affinity: taskname=%s, cpu#=%d",apTask->strName, nCpuNum);
 	return RET_SUCC;
 }
 /*****************************************************************************/
@@ -564,7 +564,7 @@ get_self(VOID)
 	POSIX_TASK* pTask;
 	pTask = _get_current_task();
 	if (pTask == NULL)
-		AIDE_WARN("WARNING : Get Self is not called inside a POSIX task... returning NULL");
+		DBG_WARN("WARNING : Get Self is not called inside a POSIX task... returning NULL");
 
 	return pTask;
 }
@@ -601,7 +601,7 @@ set_task_period(POSIX_TASK* apTask, RTTIME aulStartTime, RTTIME aullPeriod)
 	return RET_SUCC;
 
 failure:
-	AIDE_ERROR("FAILED : Set Task Period: Invalid task parameters");
+	DBG_ERROR("FAILED : Set Task Period: Invalid task parameters");
 	return -EWOULDBLOCK;
 }
 /*****************************************************************************/
@@ -611,7 +611,7 @@ read_timer(VOID)
 	TIMESPEC	stNow;
 	if (clock_gettime(CLOCK_TO_USE, &stNow))
 	{
-		AIDE_ERROR("FAILED : Read Timer!");
+		DBG_ERROR("FAILED : Read Timer!");
 		return (RTTIME)RET_FAIL;
 	}
 	else
@@ -645,8 +645,8 @@ wait_next_period(UINT64* apullOverrunsCnt)
 	INT nRet = clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &pTask->stDeadline, NULL);
 	if (nRet != RET_SUCC)
 	{
-		AIDE_WARN("WARNING : WAIT NEXT PERIOD : %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
-		AIDE_WARN("WARNING : WAIT NEXT PERIOD : Continue calculating next period... ");
+		DBG_WARN("WARNING : WAIT NEXT PERIOD : %s with errno (%d:%s)", pTask->strName, nRet, strerror(nRet));
+		DBG_WARN("WARNING : WAIT NEXT PERIOD : Continue calculating next period... ");
 	}
 	else
 		pTask->dwStatus = (DWORD)eReady;
@@ -663,11 +663,11 @@ wait_next_period(UINT64* apullOverrunsCnt)
 		if (apullOverrunsCnt != NULL)
 		{
 			*apullOverrunsCnt += 1;
-			AIDE_WARN("WARNING : WAIT NEXT PERIOD : %s overrun occurs cnt=%d ", pTask->strName, *apullOverrunsCnt);
+			DBG_WARN("WARNING : WAIT NEXT PERIOD : %s overrun occurs cnt=%d ", pTask->strName, *apullOverrunsCnt);
 		}
 		else
 		{
-			AIDE_WARN("WARNING : WAIT NEXT PERIOD : %s overrun occurs", pTask->strName);
+			DBG_WARN("WARNING : WAIT NEXT PERIOD : %s overrun occurs", pTask->strName);
 		}
 		nRet = -ETIMEDOUT;
 	}

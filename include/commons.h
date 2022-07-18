@@ -79,10 +79,10 @@ typedef enum _LOWLEVEL_LOG_TYPE
 } LOWLEVEL_LOG_TYPE;
 
 #define __FILENAME__					(strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define AIDE_TRACE(fmt, ...)			write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eTRACE, (PCHAR) fmt, ##__VA_ARGS__)
-#define AIDE_ERROR(fmt, ...)			write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eERROR, (PCHAR) fmt,  ##__VA_ARGS__)
-#define AIDE_WARN(fmt, ...)				write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eWARN, (PCHAR)fmt,  ##__VA_ARGS__)
-#define AIDE_INFO(fmt, ...)				write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eINFO, (PCHAR)fmt,  ##__VA_ARGS__)
+#define DBG_TRACE(fmt, ...)			write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eTRACE, (PCHAR) fmt, ##__VA_ARGS__)
+#define DBG_ERROR(fmt, ...)			write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eERROR, (PCHAR) fmt,  ##__VA_ARGS__)
+#define DBG_WARN(fmt, ...)				write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eWARN, (PCHAR)fmt,  ##__VA_ARGS__)
+#define DBG_INFO(fmt, ...)				write_lowlevel_logger((const PCHAR)__FILENAME__, __LINE__, eINFO, (PCHAR)fmt,  ##__VA_ARGS__)
 
 #define ZERO_MEMORY(input, sz)			zero_memory(input, sz)		
 
