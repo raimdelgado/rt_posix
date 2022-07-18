@@ -281,11 +281,11 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		return -nRet;
 	}
 	
-	pthread_mutexattr_t *pstMtxAttr = malloc(sizeof(pthread_mutexattr_t));
+	pthread_mutexattr_t *pstMtxAttr = NULL;
+	pthread_mutexattr_t stMtxAttr;
 	// we need to ensure that the mutex implements priority inheritance in case of real-time task
 	if (bIsRealTime == TRUE)
 	{
-		pthread_mutexattr_t stMtxAttr;
 		nRet = pthread_mutexattr_init(&stMtxAttr);
 		if (nRet != RET_SUCC)
 		{
@@ -300,8 +300,6 @@ _create_task(POSIX_TASK* apTask, const PCHAR astrName, INT anStkSize, INT anPrio
 		}
 		pstMtxAttr = &stMtxAttr;
 	}
-	else pstMtxAttr = NULL;
-		
 	nRet = pthread_mutex_init(&apTask->mtxSuspend, pstMtxAttr);
 	if (nRet != RET_SUCC)
 	{
