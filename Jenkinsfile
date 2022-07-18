@@ -33,6 +33,14 @@ pipeline {
 				cobertura(coberturaReportFile: 'Coverage.xml', onlyStable: false)
 				junit(testResults: 'GTest.xml', skipPublishingChecks: true)
 			}
+			post{
+				always{
+            		xunit (
+                		thresholds: [ skipped(failureThreshold: '0'), failed(failureThreshold: '0') ],
+                		tools: [ GoogleTest(pattern: 'GTest.xml') ]
+            		)
+        		}
+    		}
 		}
 	}
 }
