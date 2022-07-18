@@ -31,7 +31,6 @@ pipeline {
 					lcov_cobertura Coverage.info -o Coverage.xml
 					'''
 				cobertura(coberturaReportFile: 'Coverage.xml', onlyStable: false)
-				junit(testResults: 'GTest.xml', skipPublishingChecks: true)
 			}
 			post{
 				always{
