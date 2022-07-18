@@ -19,7 +19,7 @@ pipeline {
 				recordIssues(enabledForFailure: true, aggregatingResults: true, tools: [cppCheck(pattern: 'CppCheck.xml')])
 			}
 		}
-		stage ('UNIT TEST AND CODE COVERAGE){
+		stage ('UNIT TEST AND CODE COVERAGE'){
 			steps{
 				sh '''cd ${WORKSPACE}
 				 	cd ./test
