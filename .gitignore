@@ -3,4 +3,6 @@
 **obj
 **.gcno
 **.gcda
-
+**.sh
+**.o
+**.app

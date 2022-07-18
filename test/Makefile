@@ -40,12 +40,12 @@ endif
 
 
 $(TARGET): $(OBJECTS)
-	$(CC) --coverage -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+	$(CC) --coverage -o $(TARGET).app $(OBJECTS) $(LDFLAGS)
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) $<
 
 clean:
-	rm -f $(TARGET) $(OBJECTS) $(CUR_DIR)/*.gcno $(CUR_DIR)/*.gcda *.sh
+	rm -f $(TARGET) $(OBJECTS) $(CUR_DIR)/*.gcno $(CUR_DIR)/*.gcda *.sh *.app
 
 .PHONY: all clean

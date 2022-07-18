@@ -58,8 +58,9 @@ endif
 
 
 executables: $(EXEC)
+
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@.app $< $(LDFLAGS)
 
 objects: $(OBJECTS)
 $(CUR_DIR)/%.o : %.cpp
@@ -77,7 +78,7 @@ testing:
 clean:
 	$(RM) -rf \
 		$(EXEC) \
-		*.o *.d \
+		*.o *.d *.app \
 		$(START)*
 re:
 	make clean
