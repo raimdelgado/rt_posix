@@ -23,7 +23,7 @@ pipeline {
 			steps{
 				sh '''cd ${WORKSPACE}
 				 	cd ./test
-					./start.sh UnitTest --gtest_output=xml:../GTest.xml
+					./start.sh UnitTest.app --gtest_output=xml:../GTest.xml
 					cd ${WORKSPACE}
 					lcov -c --directory . --output-file Coverage.info
 					lcov -r Coverage.info -o Coverage.info '/usr/include/*'
