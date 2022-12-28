@@ -658,7 +658,7 @@ wait_next_period(UINT64* apullOverrunsCnt)
 	
 	// check for missed deadlines
 	convert_nsecs_to_timespec(read_timer(), &stNow);
-	if ((stNow.tv_sec > pTask->stDeadline.tv_sec) || (stNow.tv_sec == pTask->stDeadline.tv_sec && pTask->stDeadline.tv_nsec > stNow.tv_nsec))
+	if ((stNow.tv_sec > pTask->stDeadline.tv_sec) || (stNow.tv_sec == pTask->stDeadline.tv_sec && pTask->stDeadline.tv_nsec < stNow.tv_nsec))
 	{
 		if (apullOverrunsCnt != NULL)
 		{
